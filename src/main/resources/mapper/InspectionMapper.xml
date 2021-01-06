@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hz.show.dao.InspectionDao">
+
+    <select id="getHotelList" resultType="com.alibaba.fastjson.JSONObject">
+        select * from t_hotel
+    </select>
+
+    <select id="getHotel" resultType="com.alibaba.fastjson.JSONObject" parameterType="Integer">
+        select * from t_hotel where id =  #{id}
+    </select>
+
+    <select id="getInspection" parameterType="java.util.Map" resultType="com.alibaba.fastjson.JSONObject"  >
+        select * from t_inspection where  1 =1
+        <if test="hotel_id != null and hotel_id != '' " >
+            and hotel_id = #{hotel_id}
+        </if>
+        <if test="inspection_id != null and inspection_id != '' " >
+            and id = #{inspection_id}
+        </if>
+    </select>
+
+
+    <delete id="deleteProperty" parameterType="Integer"   >
+        delete from t_hotel_property where hotel_id = #{hotelId}
+    </delete>
+
+    <select id="getPropertyList" parameterType="Integer"  resultType="com.alibaba.fastjson.JSONObject">
+        select * from t_hotel_property where hotel_id = #{hotelId} order by id asc
+    </select>
+
+    <select id="getInspectionList" parameterType="java.util.Map" resultType="com.alibaba.fastjson.JSONObject">
+            select * from t_inspection  order by date  desc
+    </select>
+
+    <select id="getInspectionContentList" parameterType="Integer" resultType="com.alibaba.fastjson.JSONObject">
+        select * from t_inspection_content where inspection_id = #{inspectionId}  order by  id asc
+    </select>
+
+
+    <insert  id="addInspection" parameterType="java.util.Map" useGeneratedKeys="true" keyProperty="id"  keyColumn="id">
+        INSERT INTO t_inspection (
+            room_number,
+            ip,
+            phone,
+            hotel_id,
+            hotel_address,
+            date,
+            people,
+            shop_manager,
+        <if test="order_id != null and order_id != '' ">order_id,</if>
+            hotel_name
+        )
+        VALUES
+        (
+            #{room_number},
+            #{ip},
+            #{phone},
+            #{hotel_id},
+            #{hotel_address},
+            #{date},
+            #{people},
+            #{shop_manager},
+        <if test="order_id != null and order_id != '' ">#{order_id},</if>
+            #{hotel_name}
+        )
+    </insert>
+
+
+    <insert id="addInspectionContent" parameterType="java.util.Map" >
+        INSERT INTO t_inspection_content (
+        inspection_id,
+        inspection_content,
+        inspection_one,
+        inspection_two,
+        inspection_project,
+        inspection_condition,
+        modify_content,
+        inspection_type
+        )
+        VALUES
+        (
+        #{inspection_id},
+        #{inspection_content},
+        #{inspection_one},
+        #{inspection_two},
+        #{inspection_project},
+        #{inspection_condition},
+        #{modify_content},
+        #{inspection_type}
+        )
+    </insert>
+
+    <delete id="deleteInspection" parameterType="Integer" >
+        delete from t_inspection where hotel_id = #{hotelId}
+    </delete>
+
+    <delete id="deleteInspectionContent" parameterType="Integer" >
+        delete from t_inspection_content where inspection_id = #{inspectionId}
+    </delete>
+
+
+
+
+
+
+    <insert  id="addInspectionHistory" parameterType="java.util.Map"  >
+        insert into t_inspection_history select * from t_inspection  where hotel_id = #{hotelId}
+    </insert>
+
+
+    <insert id="addInspectionContentHistory" parameterType="java.util.Map" >
+        insert into t_inspection_content_history  select * from t_inspection_content where inspection_id = #{inspectionId}
+    </insert>
+
+
+    <insert id="addHotelProperty" parameterType="java.util.Map" >
+        INSERT INTO t_hotel_property (
+        hotel_id,
+        hotel_name,
+        pattern,
+        <if test="order_id != null and order_id != '' ">order_id,</if>
+        date,
+        type,
+        name,
+        val
+        )
+        VALUES
+        (
+        #{hotel_id},
+        #{hotel_name},
+        #{pattern},
+        <if test="order_id != null and order_id != '' ">#{order_id},</if>
+        #{date},
+        #{type},
+        #{name},
+        #{val}
+        )
+    </insert>
+
+
+    <select id="getMaxProblemHotelTop10" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT
+            ti.hotel_name,
+            inspection_id,
+            count(1) count
+        FROM
+          t_inspection_content tic
+        INNER JOIN t_inspection ti ON ti.id = tic.inspection_id
+        WHERE
+         tic.inspection_condition != "正常"
+        GROUP BY
+          inspection_id,
+          ti.hotel_name
+        ORDER BY
+           count DESC
+        LIMIT 10
+    </select>
+
+    <select id="getMaxProblemTop10" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT
+            inspection_project,
+            count(1) count
+        FROM
+         t_inspection_content tic
+        WHERE
+         tic.inspection_condition != "正常"
+        GROUP BY
+         inspection_project
+        ORDER BY
+          count DESC
+        LIMIT 10
+    </select>
+
+    <select id="getMaxTrainingContentTop5" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT
+            inspection_content,
+            count(1) count
+        FROM
+            t_inspection_content tic
+        WHERE
+            tic.inspection_one = 5
+            AND modify_content = '是'
+        GROUP BY
+            inspection_content
+        ORDER BY
+            count DESC
+        LIMIT 5
+    </select>
+
+    <select id="getServiceAppraise" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT
+            modify_content,
+            count(1) count
+        FROM
+            t_inspection_content
+        WHERE
+         inspection_one = 6
+        GROUP BY
+        modify_content
+        UNION
+        SELECT
+        "总数",
+        count(1) count
+        FROM
+        t_inspection_content
+        WHERE
+        inspection_one = 6
+    </select>
+
+    <select id="getInspectionHotel" resultType="com.alibaba.fastjson.JSONObject">
+        select "已巡门店数"  name,count(1) count  from t_inspection
+        union
+        select "总数" name ,count(1) count from t_hotel
+    </select>
+
+
+</mapper>
